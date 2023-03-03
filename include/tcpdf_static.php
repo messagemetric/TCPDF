@@ -1891,7 +1891,7 @@ class TCPDF_STATIC {
 	 * @since 6.0.025
 	 * @public static
 	 */
-	public static function fileGetContents($file) {
+	public static function fileGetContents($file, $use_curl=false) {
 		$alt = array($file);
 		//
 		if ((strlen($file) > 1)
@@ -1946,15 +1946,18 @@ class TCPDF_STATIC {
 			if (!self::file_exists($path)) {
 				continue;
 			}
-			$ret = @file_get_contents($path);
-			if ( $ret != false ) {
-			    return $ret;
+			if (!$use_curl) {
+				$ret = @file_get_contents($path);
+				if ( $ret != false ) {
+					return $ret;
+				}
 			}
 			// try to use CURL for URLs
-			if (!ini_get('allow_url_fopen')
-				&& function_exists('curl_init')
-				&& preg_match('%^(https?|ftp)://%', $path)
-			) {
+			if (   $use_curl
+			    || (  !ini_get('allow_url_fopen')
+				    && function_exists('curl_init')
+				    && preg_match('%^(https?|ftp)://%', $path))
+			    ) {
 				// try to get remote file data using cURL
 				$crs = curl_init();
 				curl_setopt($crs, CURLOPT_URL, $path);

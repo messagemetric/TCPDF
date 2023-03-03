@@ -6958,14 +6958,15 @@ class TCPDF {
 			}
             if (false !== $info = $this->getImageBuffer($file)) {
                 $imsize = array($info['w'], $info['h']);
-            } elseif (($imsize = @getimagesize($file)) === FALSE && strpos($file, '__tcpdf_'.$this->file_id.'_img') === FALSE){
-                $imgdata = $this->getCachedFileContents($file);
+            } else {
+                $imgdata = $this->getCachedFileContents($file, true);
             }
 		}
+		$tmp_file = null;
 		if (!empty($imgdata)) {
 			// copy image to cache
 			$original_file = $file;
-			$file = TCPDF_STATIC::getObjFilename('img', $this->file_id);
+			$tmp_file = $file = TCPDF_STATIC::getObjFilename('img', $this->file_id);
 			$fp = TCPDF_STATIC::fopenLocal($file, 'w');
 			if (!$fp) {
 				$this->Error('Unable to write file: '.$file);
@@ -7834,11 +7835,11 @@ class TCPDF {
 	 * @public
 	 * @since 4.5.016 (2009-02-24)
 	 */
-	public function _destroy($destroyall=false, $preserve_objcopy=false) {
+	public function _destroy($destroyall=false, $preserve_objcopy=false, $force=false) {
 		if (isset(self::$cleaned_ids[$this->file_id])) {
 			$destroyall = false;
 		}
-		if ($destroyall AND !$preserve_objcopy && isset($this->file_id)) {
+		if ($force || ($destroyall && !$preserve_objcopy && isset($this->file_id))) {
 			self::$cleaned_ids[$this->file_id] = true;
 			// remove all temporary files
 			if ($handle = @opendir(K_PATH_CACHE)) {
@@ -24719,10 +24720,10 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
      * @param string $file
      * @return string
      */
-    protected function getCachedFileContents($file)
+    protected function getCachedFileContents($file, $get_by_curl=false)
     {
         if (!isset($this->fileContentCache[$file])) {
-            $this->fileContentCache[$file] = TCPDF_STATIC::fileGetContents($file);
+            $this->fileContentCache[$file] = TCPDF_STATIC::fileGetContents($file, $get_by_curl);
         }
         return $this->fileContentCache[$file];
     }
